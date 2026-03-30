@@ -7,7 +7,7 @@ echo "  Gachafy アプリ 起動中..."
 echo "=============================="
 echo ""
 echo "① パッケージをインストール中..."
-npm install
+npm install --legacy-peer-deps
 echo ""
 echo "② アプリ起動中（QRコードが表示されます）"
 echo ""
