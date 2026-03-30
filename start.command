@@ -9,10 +9,6 @@ echo ""
 echo "① パッケージをインストール中..."
 npm install
 echo ""
-echo "② バージョンを自動修正中..."
-npx expo install --fix
-npm install
-echo ""
-echo "③ アプリ起動中（QRコードが表示されます）"
+echo "② アプリ起動中（QRコードが表示されます）"
 echo ""
 npx expo start --tunnel
