@@ -3,15 +3,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import { RootStackParamList, MainTabParamList, AuthStackParamList } from '../types';
 
 import HomeScreen from '../screens/HomeScreen';
-import GachaDetailScreen from '../screens/GachaDetailScreen';
-import PurchaseScreen from '../screens/PurchaseScreen';
-import PurchaseResultScreen from '../screens/PurchaseResultScreen';
-import MyItemsScreen from '../screens/MyItemsScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
+import PaymentScreen from '../screens/PaymentScreen';
+import PlayResultScreen from '../screens/PlayResultScreen';
+import CartScreen from '../screens/CartScreen';
 import MyPageScreen from '../screens/MyPageScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -23,6 +24,9 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const PURPLE = '#6C3CE1';
 
 function MainTabs() {
+  const { cartItems } = useAuth();
+  const pendingCount = cartItems.filter((c) => !c.shipping_requested).length;
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -49,12 +53,19 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="MyItems"
-        component={MyItemsScreen}
+        name="Cart"
+        component={CartScreen}
         options={{
-          tabBarLabel: 'マイアイテム',
+          tabBarLabel: 'カート',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cube-outline" size={size} color={color} />
+            <View>
+              <Ionicons name="bag-outline" size={size} color={color} />
+              {pendingCount > 0 && (
+                <View style={badgeStyles.badge}>
+                  <Text style={badgeStyles.badgeText}>{pendingCount}</Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />
@@ -89,9 +100,9 @@ export default function AppNavigator() {
       {user ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="GachaDetail" component={GachaDetailScreen} />
-          <Stack.Screen name="Purchase" component={PurchaseScreen} />
-          <Stack.Screen name="PurchaseResult" component={PurchaseResultScreen} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+          <Stack.Screen name="Payment" component={PaymentScreen} />
+          <Stack.Screen name="PlayResult" component={PlayResultScreen} />
         </Stack.Navigator>
       ) : (
         <AuthNavigator />
@@ -99,3 +110,19 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const badgeStyles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    backgroundColor: '#e53935',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+});

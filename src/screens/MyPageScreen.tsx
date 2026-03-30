@@ -15,14 +15,24 @@ import { useAuth } from '../context/AuthContext';
 const PURPLE = '#6C3CE1';
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  return new Date(iso).toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
+
 function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString('ja-JP', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export default function MyPageScreen() {
-  const { user, logout, purchaseHistory, ownedItems } = useAuth();
+  const { user, logout, playHistory, cartItems } = useAuth();
 
   const handleLogout = () => {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
@@ -31,61 +41,74 @@ export default function MyPageScreen() {
     ]);
   };
 
-  const ssrCount = ownedItems.filter((o) => o.item.rarity === 'SSR').length;
-  const totalSpent = purchaseHistory.reduce((sum, h) => sum + h.price, 0);
+  const totalSpent = playHistory.reduce((sum, h) => sum + h.cost, 0);
+  const cartPending = cartItems.filter((c) => !c.shipping_requested).length;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient colors={[PURPLE, '#9C27B0']} style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
+            <Text style={styles.avatarText}>
+              {user?.name?.[0]?.toUpperCase() ?? '?'}
+            </Text>
           </View>
           <Text style={styles.userName}>{user?.name}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
-          <Text style={styles.joinDate}>登録日: {user ? formatDate(user.joinedAt) : ''}</Text>
-
-          <View style={styles.pointCard}>
-            <Ionicons name="diamond" size={22} color={PURPLE} />
-            <View style={styles.pointCardText}>
-              <Text style={styles.pointCardLabel}>所持ポイント</Text>
-              <Text style={styles.pointCardValue}>{user?.points.toLocaleString()} pt</Text>
-            </View>
-            <TouchableOpacity style={styles.chargeBtn}>
-              <Text style={styles.chargeBtnText}>チャージ</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.joinDate}>
+            登録日: {user ? formatDate(user.joinedAt) : ''}
+          </Text>
         </LinearGradient>
 
         <View style={styles.statsGrid}>
-          <StatCard icon="git-pull-request" label="総ガチャ回数" value={`${user?.totalPulls ?? 0}回`} color={PURPLE} />
-          <StatCard icon="star" label="SSR獲得数" value={`${ssrCount}体`} color="#FF9800" />
-          <StatCard icon="cube" label="所持アイテム" value={`${ownedItems.length}種`} color="#4CAF50" />
-          <StatCard icon="card" label="累計消費" value={`${totalSpent.toLocaleString()}pt`} color="#e53935" />
+          <StatCard
+            icon="gift-outline"
+            label="総プレイ回数"
+            value={`${user?.totalPlays ?? 0}回`}
+            color={PURPLE}
+          />
+          <StatCard
+            icon="bag-outline"
+            label="配送待ち"
+            value={`${cartPending}件`}
+            color="#FF9800"
+          />
+          <StatCard
+            icon="cube-outline"
+            label="獲得アイテム"
+            value={`${cartItems.length}個`}
+            color="#4CAF50"
+          />
+          <StatCard
+            icon="card-outline"
+            label="累計支払い"
+            value={`¥${totalSpent.toLocaleString()}`}
+            color="#e53935"
+          />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>購入履歴</Text>
-          {purchaseHistory.length === 0 ? (
+          <Text style={styles.sectionTitle}>プレイ履歴</Text>
+          {playHistory.length === 0 ? (
             <View style={styles.emptyHistory}>
-              <Text style={styles.emptyHistoryText}>まだ購入履歴がありません</Text>
+              <Text style={styles.emptyHistoryText}>まだプレイ履歴がありません</Text>
             </View>
           ) : (
-            purchaseHistory.slice(0, 5).map((h) => (
+            playHistory.slice(0, 5).map((h) => (
               <View key={h.id} style={styles.historyItem}>
                 <View style={styles.historyIcon}>
                   <Ionicons name="gift" size={18} color={PURPLE} />
                 </View>
                 <View style={styles.historyInfo}>
-                  <Text style={styles.historyTitle} numberOfLines={1}>{h.gachaTitle}</Text>
-                  <Text style={styles.historyDate}>{formatDateTime(h.purchasedAt)}</Text>
-                </View>
-                <View style={styles.historyRight}>
-                  <Text style={styles.historyPullType}>
-                    {h.pullType === 'ten' ? '10連' : '1回'}
+                  <Text style={styles.historyTitle} numberOfLines={1}>
+                    {h.product_title}
                   </Text>
-                  <Text style={styles.historyPrice}>-{h.price.toLocaleString()}pt</Text>
+                  <Text style={styles.historyLineup} numberOfLines={1}>
+                    {h.lineup.name}
+                  </Text>
+                  <Text style={styles.historyDate}>{formatDateTime(h.played_at)}</Text>
                 </View>
+                <Text style={styles.historyPrice}>¥{h.cost.toLocaleString()}</Text>
               </View>
             ))
           )}
@@ -96,7 +119,12 @@ export default function MyPageScreen() {
           <MenuItem icon="document-text-outline" label="利用規約" />
           <MenuItem icon="shield-checkmark-outline" label="プライバシーポリシー" />
           <MenuItem icon="mail-outline" label="お問い合わせ" />
-          <MenuItem icon="log-out-outline" label="ログアウト" onPress={handleLogout} danger />
+          <MenuItem
+            icon="log-out-outline"
+            label="ログアウト"
+            onPress={handleLogout}
+            danger
+          />
         </View>
 
         <Text style={styles.versionText}>Gachafy v1.0.0</Text>
@@ -105,7 +133,17 @@ export default function MyPageScreen() {
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  color: string;
+}) {
   return (
     <View style={statStyles.card}>
       <Ionicons name={icon as any} size={22} color={color} />
@@ -115,7 +153,17 @@ function StatCard({ icon, label, value, color }: { icon: string; label: string; 
   );
 }
 
-function MenuItem({ icon, label, onPress, danger }: { icon: string; label: string; onPress?: () => void; danger?: boolean }) {
+function MenuItem({
+  icon,
+  label,
+  onPress,
+  danger,
+}: {
+  icon: string;
+  label: string;
+  onPress?: () => void;
+  danger?: boolean;
+}) {
   return (
     <TouchableOpacity style={menuStyles.item} onPress={onPress} activeOpacity={0.7}>
       <Ionicons name={icon as any} size={20} color={danger ? '#e53935' : '#555'} />
@@ -162,7 +210,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f8f8fc' },
   profileSection: {
     paddingTop: 32,
-    paddingBottom: 24,
+    paddingBottom: 28,
     alignItems: 'center',
     paddingHorizontal: 20,
   },
@@ -180,32 +228,7 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 32, fontWeight: '800', color: '#fff' },
   userName: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 2 },
   userEmail: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 4 },
-  joinDate: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 16 },
-  pointCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    width: '100%',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  pointCardText: { flex: 1 },
-  pointCardLabel: { fontSize: 11, color: '#999' },
-  pointCardValue: { fontSize: 20, fontWeight: '800', color: PURPLE },
-  chargeBtn: {
-    backgroundColor: PURPLE,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  chargeBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  joinDate: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -213,7 +236,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   section: { margin: 16, marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a2e', marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 12,
+  },
   emptyHistory: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -245,10 +273,9 @@ const styles = StyleSheet.create({
   },
   historyInfo: { flex: 1 },
   historyTitle: { fontSize: 14, fontWeight: '600', color: '#1a1a2e' },
+  historyLineup: { fontSize: 12, color: '#666', marginTop: 1 },
   historyDate: { fontSize: 11, color: '#999', marginTop: 2 },
-  historyRight: { alignItems: 'flex-end', gap: 2 },
-  historyPullType: { fontSize: 11, color: '#888', backgroundColor: '#f5f5f5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  historyPrice: { fontSize: 13, fontWeight: '700', color: '#e53935' },
+  historyPrice: { fontSize: 14, fontWeight: '700', color: '#e53935' },
   menuSection: {
     marginTop: 8,
     borderTopWidth: 1,

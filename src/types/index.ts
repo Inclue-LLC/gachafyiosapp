@@ -1,69 +1,70 @@
-export type Rarity = 'N' | 'R' | 'SR' | 'SSR';
+import { NavigatorScreenParams } from '@react-navigation/native';
 
-export type GachaCategory = 'キャラクター' | 'アイテム' | '限定' | 'コラボ';
-
-export interface GachaItem {
+export interface Lineup {
   id: string;
+  product_id: string;
+  priority: number;
   name: string;
-  rarity: Rarity;
-  imageUrl: string;
-  description: string;
-  probability: number;
-}
-
-export interface Gacha {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  category: GachaCategory;
-  price: number;
-  tenPullPrice: number;
-  endDate: string;
-  isNew: boolean;
-  isLimited: boolean;
-  items: GachaItem[];
-  pullCount: number;
-}
-
-export interface OwnedItem {
-  id: string;
-  item: GachaItem;
-  gachaTitle: string;
-  obtainedAt: string;
+  picture_url: string;
   count: number;
+  pickup_rate: number;
+}
+
+export interface Product {
+  id: string;
+  slug: string;
+  title: string;
+  seller_name: string;
+  play_cost: number;
+  shipping_cost_label: string;
+  delivery: string;
+  description: string;
+  trade_law: string;
+  return_policy: string;
+  picture_url: string;
+  remain_count: number;
+  status: 'active' | 'sold_out' | 'draft';
+  lineups: Lineup[];
+}
+
+export interface CartItem {
+  id: string;
+  lineup: Lineup;
+  product_id: string;
+  product_title: string;
+  product_picture_url: string;
+  won_at: string;
+  shipping_requested: boolean;
 }
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  points: number;
-  totalPulls: number;
   joinedAt: string;
+  totalPlays: number;
 }
 
-export interface PurchaseHistory {
+export interface PlayHistory {
   id: string;
-  gachaId: string;
-  gachaTitle: string;
-  pullType: 'single' | 'ten';
-  price: number;
-  purchasedAt: string;
-  items: GachaItem[];
+  product_id: string;
+  product_title: string;
+  played_at: string;
+  cost: number;
+  lineup: Lineup;
 }
-
-export type RootStackParamList = {
-  Main: undefined;
-  GachaDetail: { gachaId: string };
-  Purchase: { gachaId: string; pullType: 'single' | 'ten' };
-  PurchaseResult: { items: GachaItem[]; gachaTitle: string };
-};
 
 export type MainTabParamList = {
   Home: undefined;
-  MyItems: undefined;
+  Cart: undefined;
   MyPage: undefined;
+};
+
+export type RootStackParamList = {
+  Main: NavigatorScreenParams<MainTabParamList> | undefined;
+  ProductDetail: { productId: string };
+  Payment: { productId: string };
+  PlayResult: { lineup: Lineup; productTitle: string; productId: string };
 };
 
 export type AuthStackParamList = {

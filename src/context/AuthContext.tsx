@@ -1,18 +1,18 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, OwnedItem, PurchaseHistory } from '../types';
-import { MOCK_OWNED_ITEMS, MOCK_PURCHASE_HISTORY } from '../data/mockData';
+import { User, CartItem, PlayHistory } from '../types';
+import { MOCK_CART_ITEMS, MOCK_PLAY_HISTORY } from '../data/mockData';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  ownedItems: OwnedItem[];
-  purchaseHistory: PurchaseHistory[];
+  cartItems: CartItem[];
+  playHistory: PlayHistory[];
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  addOwnedItems: (items: OwnedItem[]) => void;
-  addPurchaseHistory: (history: PurchaseHistory) => void;
-  deductPoints: (amount: number) => void;
+  addCartItem: (item: CartItem) => void;
+  addPlayHistory: (history: PlayHistory) => void;
+  requestShipping: (cartItemId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,8 +20,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [ownedItems, setOwnedItems] = useState<OwnedItem[]>([]);
-  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [playHistory, setPlayHistory] = useState<PlayHistory[]>([]);
 
   const login = async (email: string, _password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -31,13 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: 'u1',
         name: email.split('@')[0],
         email,
-        points: 10000,
-        totalPulls: 47,
+        totalPlays: 12,
         joinedAt: '2025-01-15T00:00:00Z',
       };
       setUser(mockUser);
-      setOwnedItems(MOCK_OWNED_ITEMS);
-      setPurchaseHistory(MOCK_PURCHASE_HISTORY);
+      setCartItems(MOCK_CART_ITEMS);
+      setPlayHistory(MOCK_PLAY_HISTORY);
       return true;
     } catch {
       return false;
@@ -54,13 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: 'u_new',
         name,
         email,
-        points: 3000,
-        totalPulls: 0,
+        totalPlays: 0,
         joinedAt: new Date().toISOString(),
       };
       setUser(newUser);
-      setOwnedItems([]);
-      setPurchaseHistory([]);
+      setCartItems([]);
+      setPlayHistory([]);
       return true;
     } catch {
       return false;
@@ -71,36 +69,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null);
-    setOwnedItems([]);
-    setPurchaseHistory([]);
+    setCartItems([]);
+    setPlayHistory([]);
   };
 
-  const addOwnedItems = (newItems: OwnedItem[]) => {
-    setOwnedItems((prev) => {
-      const updated = [...prev];
-      newItems.forEach((newItem) => {
-        const existing = updated.find((o) => o.item.id === newItem.item.id);
-        if (existing) {
-          existing.count += 1;
-        } else {
-          updated.push(newItem);
-        }
-      });
-      return updated;
-    });
+  const addCartItem = (item: CartItem) => {
+    setCartItems((prev) => [item, ...prev]);
   };
 
-  const addPurchaseHistory = (history: PurchaseHistory) => {
-    setPurchaseHistory((prev) => [history, ...prev]);
+  const addPlayHistory = (history: PlayHistory) => {
+    setPlayHistory((prev) => [history, ...prev]);
+    setUser((prev) => (prev ? { ...prev, totalPlays: prev.totalPlays + 1 } : null));
   };
 
-  const deductPoints = (amount: number) => {
-    setUser((prev) => prev ? { ...prev, points: prev.points - amount, totalPulls: prev.totalPulls + (amount >= 2700 ? 10 : 1) } : null);
+  const requestShipping = (cartItemId: string) => {
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === cartItemId ? { ...item, shipping_requested: true } : item))
+    );
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, ownedItems, purchaseHistory, login, register, logout, addOwnedItems, addPurchaseHistory, deductPoints }}
+      value={{ user, isLoading, cartItems, playHistory, login, register, logout, addCartItem, addPlayHistory, requestShipping }}
     >
       {children}
     </AuthContext.Provider>
