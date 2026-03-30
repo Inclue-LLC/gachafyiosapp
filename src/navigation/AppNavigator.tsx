@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
-import { RootStackParamList, MainTabParamList, AuthStackParamList } from '../types';
+import { RootStackParamList, MainTabParamList } from '../types';
 
 import HomeScreen from '../screens/HomeScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
@@ -19,7 +19,6 @@ import RegisterScreen from '../screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
-const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
 const PURPLE = '#6C3CE1';
 
@@ -83,30 +82,19 @@ function MainTabs() {
   );
 }
 
-function AuthNavigator() {
-  return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-      <AuthStack.Screen name="Login" component={LoginScreen} />
-      <AuthStack.Screen name="Register" component={RegisterScreen} />
-    </AuthStack.Navigator>
-  );
-}
-
+// 統合スタック: 未ログインでも Home・ProductDetail を閲覧可能
+// Login/Register も同じスタックに含まれるため、どの画面からでもログイン画面へ遷移できる
 export default function AppNavigator() {
-  const { user } = useAuth();
-
   return (
     <NavigationContainer>
-      {user ? (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-          <Stack.Screen name="Payment" component={PaymentScreen} />
-          <Stack.Screen name="PlayResult" component={PlayResultScreen} />
-        </Stack.Navigator>
-      ) : (
-        <AuthNavigator />
-      )}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Payment" component={PaymentScreen} />
+        <Stack.Screen name="PlayResult" component={PlayResultScreen} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

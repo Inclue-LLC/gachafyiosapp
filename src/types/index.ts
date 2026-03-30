@@ -60,14 +60,12 @@ export type MainTabParamList = {
   MyPage: undefined;
 };
 
+// 統合スタック: Login/Register も同じスタックに含める
 export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   ProductDetail: { productId: string };
   Payment: { productId: string };
   PlayResult: { lineup: Lineup; productTitle: string; productId: string };
-};
-
-export type AuthStackParamList = {
-  Login: undefined;
+  Login: { redirectProductId?: string } | undefined;
   Register: undefined;
 };

@@ -10,7 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
+import { RootStackParamList } from '../types';
 
 const PURPLE = '#6C3CE1';
 
@@ -24,7 +27,34 @@ function formatDate(iso: string) {
 }
 
 export default function CartScreen() {
-  const { cartItems, requestShipping } = useAuth();
+  const { user, cartItems, requestShipping } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  // 未ログイン時はログイン促進画面を表示
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>カート・配送管理</Text>
+          <Text style={styles.headerCount}>0件 配送待ち</Text>
+        </View>
+        <View style={styles.loginPrompt}>
+          <Ionicons name="bag-outline" size={56} color="#ddd" />
+          <Text style={styles.loginPromptTitle}>ログインが必要です</Text>
+          <Text style={styles.loginPromptSub}>
+            カートを確認するにはログインしてください
+          </Text>
+          <TouchableOpacity
+            style={styles.loginPromptBtn}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.loginPromptBtnText}>ログイン / 新規登録</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const pendingCount = cartItems.filter((c) => !c.shipping_requested).length;
 
@@ -160,4 +190,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
+  loginPrompt: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 40,
+  },
+  loginPromptTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
+  loginPromptSub: { fontSize: 14, color: '#999', textAlign: 'center' },
+  loginPromptBtn: {
+    backgroundColor: PURPLE,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    marginTop: 8,
+  },
+  loginPromptBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

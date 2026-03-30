@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { MOCK_PRODUCTS } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ProductDetail'>;
@@ -25,6 +26,7 @@ const PURPLE = '#6C3CE1';
 export default function ProductDetailScreen({ navigation, route }: Props) {
   const [tradeLawOpen, setTradeLawOpen] = useState(false);
   const [returnPolicyOpen, setReturnPolicyOpen] = useState(false);
+  const { user } = useAuth();
 
   const product = MOCK_PRODUCTS.find((p) => p.id === route.params.productId);
 
@@ -66,7 +68,15 @@ export default function ProductDetailScreen({ navigation, route }: Props) {
           ) : (
             <TouchableOpacity
               style={styles.playBtn}
-              onPress={() => navigation.navigate('Payment', { productId: product.id })}
+              onPress={() => {
+                if (user) {
+                  // ログイン済み → そのまま決済へ
+                  navigation.navigate('Payment', { productId: product.id });
+                } else {
+                  // 未ログイン → ログイン画面へ遷移（商品IDを渡して、ログイン後に戻れるようにする）
+                  navigation.navigate('Login', { redirectProductId: product.id });
+                }
+              }}
               activeOpacity={0.85}
             >
               <LinearGradient
@@ -76,9 +86,11 @@ export default function ProductDetailScreen({ navigation, route }: Props) {
                 end={{ x: 1, y: 0 }}
               >
                 <Text style={styles.playBtnText}>
-                  ¥{product.play_cost.toLocaleString()} / 回でプレイ
+                  {user
+                    ? `¥${product.play_cost.toLocaleString()} / 回でプレイ`
+                    : 'ログインしてプレイ'}
                 </Text>
-                <Ionicons name="gift" size={20} color="#fff" />
+                <Ionicons name={user ? 'gift' : 'log-in-outline'} size={20} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
           )}

@@ -10,7 +10,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
+import { RootStackParamList } from '../types';
 
 const PURPLE = '#6C3CE1';
 
@@ -33,6 +36,38 @@ function formatDateTime(iso: string) {
 
 export default function MyPageScreen() {
   const { user, logout, playHistory, cartItems } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  // 未ログイン時はログイン促進画面を表示
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.loginPrompt}>
+          <View style={styles.loginPromptIcon}>
+            <Ionicons name="person" size={40} color="#ccc" />
+          </View>
+          <Text style={styles.loginPromptTitle}>マイページ</Text>
+          <Text style={styles.loginPromptSub}>
+            ログインするとプレイ履歴やカートを管理できます
+          </Text>
+          <TouchableOpacity
+            style={styles.loginBtn}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.loginBtnText}>ログイン</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.registerBtn}
+            onPress={() => navigation.navigate('Register')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.registerBtnText}>新規アカウント登録</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleLogout = () => {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
@@ -289,4 +324,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     paddingVertical: 20,
   },
+  loginPrompt: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    gap: 12,
+  },
+  loginPromptIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  loginPromptTitle: { fontSize: 22, fontWeight: '800', color: '#1a1a2e' },
+  loginPromptSub: { fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 20 },
+  loginBtn: {
+    backgroundColor: '#6C3CE1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    marginTop: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  registerBtn: {
+    borderWidth: 2,
+    borderColor: '#6C3CE1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    width: '100%',
+    alignItems: 'center',
+  },
+  registerBtnText: { color: '#6C3CE1', fontSize: 16, fontWeight: '700' },
 });

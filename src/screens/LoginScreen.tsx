@@ -12,20 +12,25 @@ import {
   ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthStackParamList } from '../types';
+import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 
 type Props = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
+  route: RouteProp<RootStackParamList, 'Login'>;
 };
 
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen({ navigation, route }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
+
+  // ログイン後にリダイレクトする商品ID（Playボタンから来た場合に設定される）
+  const redirectProductId = route.params?.redirectProductId;
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -33,8 +38,26 @@ export default function LoginScreen({ navigation }: Props) {
       return;
     }
     const success = await login(email.trim(), password);
-    if (!success) {
+    if (success) {
+      if (redirectProductId) {
+        // 元の商品のプレイ画面へ戻る
+        navigation.replace('Payment', { productId: redirectProductId });
+      } else {
+        navigation.replace('Main');
+      }
+    } else {
       Alert.alert('ログイン失敗', 'メールアドレスまたはパスワードが間違っています');
+    }
+  };
+
+  const handleDemo = async () => {
+    const success = await login('demo@gachafy.com', 'demo');
+    if (success) {
+      if (redirectProductId) {
+        navigation.replace('Payment', { productId: redirectProductId });
+      } else {
+        navigation.replace('Main');
+      }
     }
   };
 
@@ -45,12 +68,23 @@ export default function LoginScreen({ navigation }: Props) {
         style={styles.flex}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          {/* 戻るボタン（商品ページから来た場合のみ表示） */}
+          {navigation.canGoBack() && (
+            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+
           <View style={styles.logoSection}>
             <View style={styles.logoCircle}>
               <Ionicons name="gift" size={48} color="#fff" />
             </View>
             <Text style={styles.logoText}>Gachafy</Text>
-            <Text style={styles.logoSub}>ガチャを楽しもう</Text>
+            <Text style={styles.logoSub}>
+              {redirectProductId
+                ? 'プレイするにはログインが必要です'
+                : 'ガチャを楽しもう'}
+            </Text>
           </View>
 
           <View style={styles.card}>
@@ -76,7 +110,12 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>パスワード</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="lock-closed-outline" size={18} color="#999" style={styles.inputIcon} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={18}
+                  color="#999"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={[styles.input, styles.inputPassword]}
                   value={password}
@@ -85,8 +124,15 @@ export default function LoginScreen({ navigation }: Props) {
                   placeholderTextColor="#bbb"
                   secureTextEntry={!showPassword}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={18} color="#999" />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeBtn}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={18}
+                    color="#999"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -118,7 +164,7 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.registerBtnText}>新規アカウント登録</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => login('demo@gachafy.com', 'demo')} style={styles.demoBtn}>
+            <TouchableOpacity onPress={handleDemo} style={styles.demoBtn}>
               <Text style={styles.demoBtnText}>デモアカウントでログイン</Text>
             </TouchableOpacity>
           </View>
@@ -133,15 +179,9 @@ const PURPLE = '#6C3CE1';
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   flex: { flex: 1 },
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  logoSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
+  container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  backBtn: { marginBottom: 8 },
+  logoSection: { alignItems: 'center', marginBottom: 32 },
   logoCircle: {
     width: 88,
     height: 88,
@@ -151,17 +191,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  logoText: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: 1,
-  },
-  logoSub: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
-  },
+  logoText: { fontSize: 32, fontWeight: '800', color: '#fff', letterSpacing: 1 },
+  logoSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4, textAlign: 'center' },
   card: {
     backgroundColor: '#fff',
     borderRadius: 24,
@@ -172,22 +203,9 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a2e',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#555',
-    marginBottom: 6,
-  },
+  cardTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a2e', marginBottom: 24, textAlign: 'center' },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6 },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -196,22 +214,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  inputIcon: {
-    paddingLeft: 12,
-  },
-  input: {
-    flex: 1,
-    height: 48,
-    paddingHorizontal: 10,
-    fontSize: 15,
-    color: '#1a1a2e',
-  },
-  inputPassword: {
-    flex: 1,
-  },
-  eyeBtn: {
-    padding: 12,
-  },
+  inputIcon: { paddingLeft: 12 },
+  input: { flex: 1, height: 48, paddingHorizontal: 10, fontSize: 15, color: '#1a1a2e' },
+  inputPassword: { flex: 1 },
+  eyeBtn: { padding: 12 },
   loginBtn: {
     backgroundColor: PURPLE,
     borderRadius: 12,
@@ -221,29 +227,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 20,
   },
-  loginBtnDisabled: {
-    opacity: 0.7,
-  },
-  loginBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: '#999',
-    fontSize: 13,
-  },
+  loginBtnDisabled: { opacity: 0.7 },
+  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#e0e0e0' },
+  dividerText: { marginHorizontal: 12, color: '#999', fontSize: 13 },
   registerBtn: {
     borderWidth: 2,
     borderColor: PURPLE,
@@ -253,18 +241,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  registerBtnText: {
-    color: PURPLE,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  demoBtn: {
-    alignItems: 'center',
-    padding: 8,
-  },
-  demoBtnText: {
-    color: '#999',
-    fontSize: 13,
-    textDecorationLine: 'underline',
-  },
+  registerBtnText: { color: PURPLE, fontSize: 15, fontWeight: '700' },
+  demoBtn: { alignItems: 'center', padding: 8 },
+  demoBtnText: { color: '#999', fontSize: 13, textDecorationLine: 'underline' },
 });

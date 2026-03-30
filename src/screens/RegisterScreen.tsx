@@ -14,11 +14,11 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthStackParamList } from '../types';
+import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 
 type Props = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Register'>;
 };
 
 export default function RegisterScreen({ navigation }: Props) {
@@ -42,7 +42,9 @@ export default function RegisterScreen({ navigation }: Props) {
       return;
     }
     const success = await register(name.trim(), email.trim(), password);
-    if (!success) {
+    if (success) {
+      navigation.replace('Main');
+    } else {
       Alert.alert('登録失敗', '登録に失敗しました。もう一度お試しください');
     }
   };
